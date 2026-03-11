@@ -1,0 +1,41 @@
+@import "tailwindcss";
+
+@theme inline {
+  /* Brand palette from docs/ui_system.md */
+  --color-ink: #0f0f0f;
+  --color-ivory: #f5f3ef;
+  --color-gold: #c6a75e;
+  --color-gray-soft: #e5e5e5;
+  --color-gray-deep: #4a4a4a;
+
+  --color-background: var(--color-ivory);
+  --color-foreground: var(--color-ink);
+
+  /* Typography tokens: set by next/font in layout */
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-body), system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading), "Playfair Display", serif;
+  letter-spacing: -0.03em;
+}
+

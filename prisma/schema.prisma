@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  phone     String?
+  password  String
+  createdAt DateTime @default(now())
+
+  cart      Cart?
+  orders    Order[]
+  addresses Address[]
+}
+
+model Product {
+  id           String          @id @default(uuid())
+  title        String
+  slug         String          @unique
+  description  String
+  brand        String
+  price        Int
+  comparePrice Int?
+  createdAt    DateTime        @default(now())
+
+  variants     ProductVariant[]
+}
+
+model ProductVariant {
+  id        String    @id @default(uuid())
+  product   Product   @relation(fields: [productId], references: [id])
+  productId String
+  size      String
+  color     String?
+  sku       String    @unique
+  price     Int
+
+  inventory Inventory?
+  cartItems CartItem[]
+  orderItems OrderItem[]
+}
+
+model Inventory {
+  id               String         @id @default(uuid())
+  variant          ProductVariant @relation(fields: [variantId], references: [id])
+  variantId        String         @unique
+  stockQuantity    Int
+  reservedQuantity Int            @default(0)
+}
+
+model Cart {
+  id        String     @id @default(uuid())
+  user      User?      @relation(fields: [userId], references: [id])
+  userId    String?    @unique
+  createdAt DateTime   @default(now())
+
+  items     CartItem[]
+}
+
+model CartItem {
+  id        String         @id @default(uuid())
+  cart      Cart           @relation(fields: [cartId], references: [id])
+  cartId    String
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  variantId String
+  quantity  Int
+}
+
+model Order {
+  id            String      @id @default(uuid())
+  user          User?       @relation(fields: [userId], references: [id])
+  userId        String?
+  totalAmount   Int
+  paymentStatus String      // pending | paid | failed | refunded
+  orderStatus   String      // pending | processing | shipped | delivered
+
+  // Guest shipping address (stored on order for guest checkout)
+  shippingName     String?
+  shippingPhone    String?
+  shippingStreet   String?
+  shippingCity     String?
+  shippingState    String?
+  shippingPostalCode String?
+
+  razorpayOrderId String?   @unique  // for webhook lookup
+
+  // Shipping / tracking
+  shippingProvider String?   // e.g. shiprocket
+  trackingId       String?   @unique
+  trackingUrl      String?
+  shippingStatus   String?   // created | picked_up | in_transit | delivered
+
+  createdAt     DateTime    @default(now())
+
+  items         OrderItem[]
+  payment       Payment?
+}
+
+model OrderItem {
+  id        String         @id @default(uuid())
+  order     Order          @relation(fields: [orderId], references: [id])
+  orderId   String
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  variantId String
+  quantity  Int
+  price     Int
+}
+
+model Address {
+  id         String   @id @default(uuid())
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  name       String
+  phone      String
+  street     String
+  city       String
+  state      String
+  postalCode String
+}
+
+model Payment {
+  id              String  @id @default(uuid())
+  order           Order   @relation(fields: [orderId], references: [id])
+  orderId         String  @unique
+  paymentProvider String
+  paymentStatus   String
+  transactionId   String  @unique
+  amount          Int
+}
+
