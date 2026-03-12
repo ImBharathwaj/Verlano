@@ -21,8 +21,8 @@ export default async function ShopPage() {
   const products = await getProducts();
 
   return (
-    <main className="flex flex-1 flex-col py-12">
-      <header className="mb-8 flex items-end justify-between gap-4">
+    <main className="flex flex-1 flex-col py-16 space-y-10">
+      <header className="flex items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Shop</h1>
           <p className="text-sm text-gray-deep/80">

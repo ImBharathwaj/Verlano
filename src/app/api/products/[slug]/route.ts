@@ -1,14 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-type RouteParams = {
-  params: {
-    slug: string;
-  };
-};
-
-export async function GET(_request: Request, { params }: RouteParams) {
-  const { slug } = params;
+export async function GET(
+  _request: NextRequest,
+  context: { params: Promise<{ slug: string }> },
+) {
+  const { slug } = await context.params;
 
   try {
     const product = await prisma.product.findUnique({

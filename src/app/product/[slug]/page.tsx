@@ -3,12 +3,14 @@ import { notFound } from "next/navigation";
 import { AddToCart } from "@/components/product/AddToCart";
 
 type ProductPageProps = {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 };
 
 export default async function ProductPage({ params }: ProductPageProps) {
+  const { slug } = await params;
+
   const product = await prisma.product.findUnique({
-    where: { slug: params.slug },
+    where: { slug },
     include: {
       variants: {
         include: {

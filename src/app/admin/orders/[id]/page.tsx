@@ -50,6 +50,7 @@ export default function AdminOrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [shippingActionLoading, setShippingActionLoading] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -99,6 +100,38 @@ export default function AdminOrderDetailPage() {
     }
   };
 
+  const handleCreateShipment = async () => {
+    if (!order) return;
+    setShippingActionLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/orders/${id}/ship`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? "Failed to create shipment");
+      } else {
+        setOrder((prev) =>
+          prev
+            ? {
+                ...prev,
+                shippingProvider: data.shippingProvider ?? prev.shippingProvider,
+                trackingId: data.trackingId ?? prev.trackingId,
+                trackingUrl: data.trackingUrl ?? prev.trackingUrl,
+                shippingStatus: data.shippingStatus ?? prev.shippingStatus,
+              }
+            : prev,
+        );
+      }
+    } catch {
+      setError("Failed to create shipment");
+    } finally {
+      setShippingActionLoading(false);
+    }
+  };
+
   if (loading) {
     return <p className="py-12 text-sm text-gray-deep/80">Loading...</p>;
   }
@@ -118,7 +151,7 @@ export default function AdminOrderDetailPage() {
             #{order.id.slice(0, 8)} — created {created}
           </p>
         </div>
-        <div className="space-x-2 text-sm">
+        <div className="space-x-3 text-sm">
           <span className="text-gray-deep/80">Status:</span>
           <select
             value={order.orderStatus}
@@ -132,6 +165,14 @@ export default function AdminOrderDetailPage() {
               </option>
             ))}
           </select>
+          <button
+            type="button"
+            onClick={handleCreateShipment}
+            disabled={shippingActionLoading}
+            className="rounded-full border border-gray-soft bg-white px-3 py-1 text-xs font-medium text-gray-deep/90 hover:bg-gray-soft/40 disabled:opacity-50"
+          >
+            {order.shippingStatus ? "Recreate shipment" : "Create shipment"}
+          </button>
         </div>
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}
