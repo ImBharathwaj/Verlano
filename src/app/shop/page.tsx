@@ -10,6 +10,9 @@ async function getProducts() {
           inventory: true,
         },
       },
+      images: {
+        orderBy: { position: "asc" },
+      },
     },
     take: 36,
   });

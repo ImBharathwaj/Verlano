@@ -11,7 +11,10 @@ export async function GET(request: Request) {
   try {
     const products = await prisma.product.findMany({
       orderBy: { createdAt: "desc" },
-      include: { variants: { include: { inventory: true } } },
+      include: {
+        variants: { include: { inventory: true } },
+        images: true,
+      },
     });
     return NextResponse.json(products);
   } catch (error) {
@@ -40,6 +43,7 @@ export async function POST(request: Request) {
     price,
     comparePrice,
     variants,
+    images,
   } = body as {
     title?: string;
     slug?: string;
@@ -48,6 +52,7 @@ export async function POST(request: Request) {
     price?: number;
     comparePrice?: number | null;
     variants?: { size: string; price: number; stockQuantity: number }[];
+    images?: { url: string; alt?: string | null; isPrimary?: boolean; position?: number }[];
   };
 
   if (!title || !slug || !description || !brand || typeof price !== "number") {
@@ -85,6 +90,31 @@ export async function POST(request: Request) {
               variantId: variant.id,
               stockQuantity: v.stockQuantity,
             },
+          });
+        }
+      }
+
+      if (images && images.length > 0) {
+        let normalized = images
+          .filter((img) => img.url && img.url.trim().length > 0)
+          .map((img, index) => ({
+            url: img.url,
+            alt: img.alt ?? null,
+            isPrimary: img.isPrimary ?? false,
+            position: img.position ?? index,
+            productId: product.id,
+          }));
+
+        if (!normalized.some((img) => img.isPrimary) && normalized.length > 0) {
+          normalized = normalized.map((img, index) => ({
+            ...img,
+            isPrimary: index === 0,
+          }));
+        }
+
+        if (normalized.length > 0) {
+          await tx.productImage.createMany({
+            data: normalized,
           });
         }
       }

@@ -1,8 +1,9 @@
 import Link from "next/link";
-import type { Product, ProductVariant, Inventory } from "@prisma/client";
+import type { Product, ProductVariant, Inventory, ProductImage } from "@prisma/client";
 
 type ProductWithRelations = Product & {
   variants: (ProductVariant & { inventory: Inventory | null })[];
+  images: ProductImage[];
 };
 
 type ProductCardProps = {
@@ -19,11 +20,26 @@ export function ProductCard({ product }: ProductCardProps) {
     return sum + (v.inventory?.stockQuantity ?? 0);
   }, 0);
 
+  const images = product.images ?? [];
+  const primaryImage =
+    images.find((img) => img.isPrimary) ?? images[0] ?? null;
+
   return (
     <Link
       href={`/product/${product.slug}`}
-      className="group flex flex-col justify-between rounded-2xl border border-gray-soft bg-white px-4 py-5 transition hover:-translate-y-1 hover:border-black hover:shadow-sm"
+      className="group flex flex-col justify-between rounded-2xl border border-gray-soft bg-white p-4 shadow-[0_8px_20px_rgba(0,0,0,0.02)] transition-transform transition-shadow duration-300 hover:-translate-y-2 hover:border-black hover:shadow-[0_18px_40px_rgba(0,0,0,0.08)]"
     >
+      {primaryImage && (
+        <div className="mb-4">
+          <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl border border-gray-soft bg-gray-soft/20">
+            <img
+              src={primaryImage.url}
+              alt={primaryImage.alt ?? product.title}
+              className="h-full w-full origin-center scale-100 object-cover transition-transform duration-300 group-hover:scale-110"
+            />
+          </div>
+        </div>
+      )}
       <div className="space-y-2">
         <p className="text-[11px] font-medium uppercase tracking-[0.2em] text-gray-deep/70">
           {product.brand}

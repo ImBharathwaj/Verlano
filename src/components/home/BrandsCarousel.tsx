@@ -35,7 +35,7 @@ export function BrandsCarousel() {
         </p>
       </header>
       <div className="relative overflow-hidden">
-        <div className="flex animate-marquee gap-12 whitespace-nowrap py-4">
+        <div className="flex min-w-max animate-marquee gap-12 whitespace-nowrap py-4">
           {[...brands, ...brands].map((brand, i) => (
             <div
               key={`${brand.src}-${i}`}

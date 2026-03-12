@@ -16,8 +16,12 @@ export default function AdminNewProductPage() {
     variantPrice: "",
     stockQuantity: "",
   });
+  const [images, setImages] = useState<
+    { url: string; alt: string; isPrimary: boolean; position: number }[]
+  >([]);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,6 +51,7 @@ export default function AdminNewProductPage() {
                   },
                 ]
               : [],
+          images: images,
         }),
       });
       const data = await res.json();
@@ -66,6 +71,51 @@ export default function AdminNewProductPage() {
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setForm((f) => ({ ...f, [field]: e.target.value }));
     };
+
+  const handleImageUpload = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+    setError(null);
+    setUploading(true);
+    try {
+      const uploaded: { url: string }[] = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const fd = new FormData();
+        fd.append("file", file);
+        const res = await fetch("/api/admin/uploads/product-image", {
+          method: "POST",
+          body: fd,
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error ?? "Failed to upload image");
+        }
+        if (data.url) {
+          uploaded.push({ url: data.url as string });
+        }
+      }
+
+      setImages((prev) => {
+        const base = [...prev];
+        uploaded.forEach(({ url }) => {
+          base.push({
+            url,
+            alt: "",
+            isPrimary: base.length === 0, // first image becomes primary
+            position: base.length,
+          });
+        });
+        return base;
+      });
+    } catch {
+      setError("Failed to upload image");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -132,6 +182,89 @@ export default function AdminNewProductPage() {
               value={form.comparePrice}
               onChange={update("comparePrice")}
             />
+          </div>
+        </div>
+        <div className="space-y-3">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-gray-deep/70">
+            Product images
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label className="mb-1 block text-xs font-medium text-gray-deep/80">
+                Upload images (stored in MinIO)
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageUpload}
+                className="block w-full text-xs text-gray-deep/80 file:mr-3 file:rounded-full file:border-0 file:bg-black file:px-4 file:py-1.5 file:text-xs file:font-medium file:text-white file:hover:bg-black/90"
+              />
+              {uploading && (
+                <p className="text-xs text-gray-deep/70">Uploading...</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              {images.length === 0 ? (
+                <p className="text-xs text-gray-deep/70">
+                  No images yet. Upload 1–5 images; the first becomes primary.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {images.map((img, index) => (
+                    <li
+                      key={img.url + index}
+                      className="flex items-center gap-2 rounded-lg border border-gray-soft bg-white px-3 py-2"
+                    >
+                      <span className="text-[11px] text-gray-deep/70">
+                        {index + 1}.
+                      </span>
+                      <input
+                        className="flex-1 truncate text-xs text-gray-deep/80"
+                        value={img.url}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setImages((prev) =>
+                            prev.map((p, i) =>
+                              i === index ? { ...p, url: val } : p,
+                            ),
+                          );
+                        }}
+                      />
+                      <input
+                        className="w-40 rounded border border-gray-soft px-2 py-1 text-xs text-black"
+                        placeholder="Alt text"
+                        value={img.alt}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setImages((prev) =>
+                            prev.map((p, i) =>
+                              i === index ? { ...p, alt: val } : p,
+                            ),
+                          );
+                        }}
+                      />
+                      <label className="flex items-center gap-1 text-[11px] text-gray-deep/80">
+                        <input
+                          type="radio"
+                          name="primaryImage"
+                          checked={img.isPrimary}
+                          onChange={() =>
+                            setImages((prev) =>
+                              prev.map((p, i) => ({
+                                ...p,
+                                isPrimary: i === index,
+                              })),
+                            )
+                          }
+                        />
+                        Primary
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </div>
         </div>
         <div>

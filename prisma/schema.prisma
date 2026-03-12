@@ -31,6 +31,7 @@ model Product {
   createdAt    DateTime        @default(now())
 
   variants     ProductVariant[]
+  images       ProductImage[]
 }
 
 model ProductVariant {
@@ -135,3 +136,12 @@ model Payment {
   amount          Int
 }
 
+model ProductImage {
+  id        String  @id @default(uuid())
+  product   Product @relation(fields: [productId], references: [id])
+  productId String
+  url       String
+  alt       String?
+  position  Int     @default(0)
+  isPrimary Boolean @default(false)
+}

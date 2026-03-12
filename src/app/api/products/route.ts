@@ -22,6 +22,9 @@ export async function GET(request: Request) {
               inventory: true,
             },
           },
+          images: {
+            orderBy: { position: "asc" },
+          },
         },
       }),
       prisma.product.count(),

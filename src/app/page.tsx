@@ -13,6 +13,9 @@ export default async function Home() {
           inventory: true,
         },
       },
+      images: {
+        orderBy: { position: "asc" },
+      },
     },
     take: 8,
   });

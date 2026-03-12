@@ -3,6 +3,14 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 
+type ProductImage = {
+  id: string;
+  url: string;
+  alt: string | null;
+  isPrimary: boolean;
+  position: number;
+};
+
 type Product = {
   id: string;
   title: string;
@@ -11,6 +19,7 @@ type Product = {
   brand: string;
   price: number;
   comparePrice: number | null;
+  images: ProductImage[];
 };
 
 export default function AdminEditProductPage() {
@@ -103,6 +112,8 @@ export default function AdminEditProductPage() {
   const compareDisplay = product.comparePrice
     ? (product.comparePrice / 100).toString()
     : "";
+
+  const images = product.images ?? [];
 
   return (
     <div className="space-y-6">
@@ -200,6 +211,68 @@ export default function AdminEditProductPage() {
             onChange={handleChange("description")}
             required
           />
+        </div>
+        <div className="space-y-2">
+          <p className="text-xs font-medium uppercase tracking-[0.18em] text-gray-deep/70">
+            Product images
+          </p>
+          <ul className="space-y-2">
+            {images.length === 0 && (
+              <li className="text-xs text-gray-deep/70">
+                No images stored yet. You can paste URLs and alt text here and
+                mark one as primary.
+              </li>
+            )}
+            {images.map((img, index) => (
+              <li
+                key={img.id ?? index}
+                className="flex items-center gap-2 rounded-lg border border-gray-soft bg-white px-3 py-2"
+              >
+                <span className="text-[11px] text-gray-deep/70">
+                  {index + 1}.
+                </span>
+                <input
+                  className="flex-1 truncate text-xs text-gray-deep/80"
+                  value={img.url}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const next = images.map((p, i) =>
+                      i === index ? { ...p, url: val } : p,
+                    );
+                    setProduct({ ...product, images: next });
+                  }}
+                  placeholder="https://..."
+                />
+                <input
+                  className="w-40 rounded border border-gray-soft px-2 py-1 text-xs text-black"
+                  placeholder="Alt text"
+                  value={img.alt ?? ""}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const next = images.map((p, i) =>
+                      i === index ? { ...p, alt: val } : p,
+                    );
+                    setProduct({ ...product, images: next });
+                  }}
+                />
+                <label className="flex items-center gap-1 text-[11px] text-gray-deep/80">
+                  <input
+                    type="radio"
+                    name="primaryImage"
+                    checked={img.isPrimary}
+                    onChange={() => {
+                      const next = images.map((p, i) => ({
+                        ...p,
+                        isPrimary: i === index,
+                      }));
+                      setProduct({ ...product, images: next });
+                    }}
+                  />
+                  Primary
+                </label>
+              </li>
+            ))}
+          </ul>
         </div>
         {error && <p className="text-sm text-red-600">{error}</p>}
         <button
