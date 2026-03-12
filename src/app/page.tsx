@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { ProductGrid } from "@/components/product/ProductGrid";
+import { HeroCarousel } from "@/components/home/HeroCarousel";
+import { BrandsCarousel } from "@/components/home/BrandsCarousel";
 import Image from "next/image";
 
 export default async function Home() {
@@ -16,53 +18,9 @@ export default async function Home() {
   });
 
   return (
-    <main className="flex flex-1 flex-col gap-16 py-24">
-      {/* 1. Hero + Primary CTA */}
-      <section className="rounded-3xl border border-gray-soft bg-white px-8 py-16 shadow-sm sm:px-14 sm:py-20">
-        <div className="grid gap-10 md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)] md:items-center">
-          <div className="space-y-10">
-            <p className="text-xs uppercase tracking-[0.3em] text-gray-deep/70">
-              Verlano / New surplus arrivals
-            </p>
-            <div className="space-y-6">
-              <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-                Luxury surplus fashion,
-                <br />
-                <span className="text-gray-deep/80">at insider prices.</span>
-              </h1>
-              <p className="max-w-xl text-base text-gray-deep/80">
-                Curated surplus garments from premium Indian and global brands.
-                Minimal, elegant, and accessible – designed for young
-                professionals and students who refuse to compromise on style.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-4">
-              <a
-                href="/shop"
-                className="rounded-full bg-ink px-7 py-2.5 text-sm font-medium text-white transition hover:bg-ink/90"
-              >
-                Shop collection
-              </a>
-              <a
-                href="/shop?sort=new"
-                className="rounded-full border border-ink px-7 py-2.5 text-sm font-medium text-ink transition hover:bg-gray-soft/60"
-              >
-                New arrivals
-              </a>
-            </div>
-          </div>
-          <div className="relative mt-4 h-72 overflow-hidden rounded-2xl border border-gray-soft bg-gray-soft/40 md:mt-0">
-            <Image
-              src="/images/hero-model-1.jpg"
-              alt="Editorial shot of a model wearing Verlano surplus pieces"
-              fill
-              className="object-cover"
-              priority
-            />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
-          </div>
-        </div>
-      </section>
+    <main className="flex flex-1 flex-col gap-16 pt-0 pb-24">
+      {/* 1. Hero carousel */}
+      <HeroCarousel />
 
       {/* 2. Highlighted Benefits Strip */}
       <section className="rounded-3xl border border-gray-soft bg-gray-soft/40 px-10 py-6">
@@ -97,6 +55,9 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      {/* Brands we carry */}
+      <BrandsCarousel />
 
       {/* 3. Featured Collections Row */}
       <section className="space-y-6">

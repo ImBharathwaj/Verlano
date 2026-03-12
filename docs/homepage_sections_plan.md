@@ -2,6 +2,8 @@
 
 This plan is inspired by layouts like `tjmaxx.com`, adapted to Verlano’s **minimal, luxury** brand.
 
+**Status**: All sections in this plan (1–8) are now implemented on the homepage. A full-bleed hero image carousel and a scrolling “Brands we carry” band have also been added as premium enhancements.
+
 ---
 
 ### 1. Hero + Primary CTA (already present, to refine) ✅
