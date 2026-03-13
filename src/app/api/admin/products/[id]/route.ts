@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
+import { logAudit } from "@/lib/audit-log";
 import { DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { minioClient, MINIO_BUCKET, MINIO_PUBLIC_BASE_URL } from "@/lib/minio";
 
@@ -9,6 +10,9 @@ export const dynamic = "force-dynamic";
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(request: Request, { params }: Params) {
+  const guard = requireAdmin(request);
+  if (guard) return guard;
+
   const { id } = await params;
   try {
     const product = await prisma.product.findUnique({
@@ -66,6 +70,10 @@ export async function PATCH(request: Request, { params }: Params) {
   };
 
   try {
+    const existing = await prisma.product.findUnique({
+      where: { id },
+      select: { title: true, slug: true, brand: true, price: true, comparePrice: true, categories: true },
+    });
     const updated = await prisma.$transaction(async (tx) => {
       const product = await tx.product.update({
         where: { id },
@@ -172,6 +180,32 @@ export async function PATCH(request: Request, { params }: Params) {
       if (!result) throw new Error("Product not found");
       return result;
     });
+    if (existing) {
+      const changes: Record<string, { old: unknown; new: unknown }> = {};
+      if (title !== undefined && existing.title !== title) changes.title = { old: existing.title, new: title };
+      if (slug !== undefined && existing.slug !== slug) changes.slug = { old: existing.slug, new: slug };
+      if (brand !== undefined && existing.brand !== brand) changes.brand = { old: existing.brand, new: brand };
+      if (typeof price === "number" && existing.price !== price) changes.price = { old: existing.price, new: price };
+      if (comparePrice !== undefined && existing.comparePrice !== comparePrice) changes.comparePrice = { old: existing.comparePrice, new: comparePrice };
+      if (categories !== undefined) {
+        const newCategories = Array.isArray(categories)
+          ? categories.filter((c) => typeof c === "string" && c.trim().length > 0).map((c) => c.trim().toLowerCase())
+          : [];
+        if (JSON.stringify(existing.categories) !== JSON.stringify(newCategories)) {
+          changes.categories = { old: existing.categories, new: newCategories };
+        }
+      }
+      if (Object.keys(changes).length > 0) {
+        await logAudit({
+          entityType: "product",
+          entityId: id,
+          action: "update",
+          field: Object.keys(changes).join(","),
+          oldValue: JSON.stringify(Object.fromEntries(Object.entries(changes).map(([k, v]) => [k, v.old]))),
+          newValue: JSON.stringify(Object.fromEntries(Object.entries(changes).map(([k, v]) => [k, v.new]))),
+        });
+      }
+    }
     return NextResponse.json(updated);
   } catch (error) {
     console.error("[PATCH /api/admin/products/[id]]", error);
@@ -188,6 +222,10 @@ export async function DELETE(request: Request, { params }: Params) {
 
   const { id } = await params;
   try {
+    const product = await prisma.product.findUnique({
+      where: { id },
+      select: { title: true, slug: true },
+    });
     // Load image URLs before deleting DB rows so we can remove files from MinIO.
     const images = await prisma.productImage.findMany({
       where: { productId: id },
@@ -253,6 +291,16 @@ export async function DELETE(request: Request, { params }: Params) {
       }
     }
 
+    if (product) {
+      await logAudit({
+        entityType: "product",
+        entityId: id,
+        action: "delete",
+        field: "product",
+        oldValue: JSON.stringify({ title: product.title, slug: product.slug }),
+        newValue: undefined,
+      });
+    }
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[DELETE /api/admin/products/[id]]", error);

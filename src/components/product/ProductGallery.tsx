@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { OptimizedProductImage } from "./OptimizedProductImage";
 
 type ProductImage = {
   id?: string;
@@ -29,11 +30,11 @@ export function ProductGallery({ images, productTitle }: ProductGalleryProps) {
   const activeImage = safeImages[activeIndex] ?? safeImages[0];
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-4 md:flex-row">
+    <div className="relative space-y-4">
+      <div className="relative flex flex-col gap-4 md:flex-row">
         {/* Main image with hover tracking */}
         <div
-          className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-gray-soft bg-gray-soft/20 md:w-[55%]"
+          className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-gray-soft bg-gray-soft/20 md:max-w-[55%]"
           onMouseEnter={() => setIsZooming(true)}
           onMouseLeave={() => setIsZooming(false)}
           onMouseMove={(e) => {
@@ -47,28 +48,33 @@ export function ProductGallery({ images, productTitle }: ProductGalleryProps) {
           }}
         >
           {activeImage.url ? (
-            <img
+            <OptimizedProductImage
               src={activeImage.url}
               alt={activeImage.alt ?? productTitle}
-              className="h-full w-full origin-center scale-100 object-cover"
+              layout="gallery"
+              className="h-full w-full origin-center scale-100"
             />
           ) : (
             <div className="h-full w-full border border-dashed border-gray-soft bg-gray-soft/40" />
           )}
         </div>
 
-        {/* Zoom pane (desktop) */}
+        {/* Zoom pane: overlays product details area (positioned on top of right column) */}
         {activeImage.url && (
-          <div className="hidden h-[340px] w-[340px] overflow-hidden rounded-2xl border border-gray-soft bg-gray-soft/10 lg:h-[420px] lg:w-[420px] md:block">
+          <div
+            className="pointer-events-none absolute left-[calc(55%+0.5rem)] top-0 z-30 hidden h-[320px] w-[320px] overflow-hidden rounded-2xl border border-gray-soft bg-white shadow-xl md:block lg:h-[380px] lg:w-[380px]"
+            style={{
+              opacity: isZooming ? 1 : 0,
+              transition: "opacity 150ms ease-out",
+            }}
+          >
             <div
-              className="h-full w-full"
+              className="h-full w-full bg-gray-soft/5"
               style={{
                 backgroundImage: `url(${activeImage.url})`,
                 backgroundRepeat: "no-repeat",
                 backgroundSize: "500% 500%",
                 backgroundPosition: `${zoomPos.x}% ${zoomPos.y}%`,
-                opacity: isZooming ? 1 : 0,
-                transition: "opacity 150ms ease-out",
               }}
             />
           </div>
@@ -89,9 +95,10 @@ export function ProductGallery({ images, productTitle }: ProductGalleryProps) {
               } bg-gray-soft/20`}
             >
               {img.url ? (
-                <img
+                <OptimizedProductImage
                   src={img.url}
                   alt={img.alt ?? productTitle}
+                  layout="thumbnail"
                   className="h-full w-full object-cover"
                 />
               ) : null}

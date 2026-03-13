@@ -2,9 +2,13 @@ import { prisma } from "@/lib/prisma";
 import { ProductGrid } from "@/components/product/ProductGrid";
 import { HeroCarousel } from "@/components/home/HeroCarousel";
 import { BrandsCarousel } from "@/components/home/BrandsCarousel";
+import { NewsletterSignup } from "@/components/home/NewsletterSignup";
 import Image from "next/image";
 
-export default async function Home() {
+type Props = { searchParams: Promise<{ newsletter?: string; msg?: string }> };
+
+export default async function Home({ searchParams }: Props) {
+  const params = await searchParams;
   const featuredProducts = await prisma.product.findMany({
     orderBy: { createdAt: "desc" },
     include: {
@@ -212,6 +216,7 @@ export default async function Home() {
             src="/images/editorial-model-1.jpg"
             alt="Minimal editorial shot representing Verlano's story"
             fill
+            sizes="(max-width: 768px) 100vw, 50vw"
             className="object-cover"
           />
         </div>
@@ -219,35 +224,10 @@ export default async function Home() {
 
       {/* 7. Email Capture / Early Access */}
       <section className="rounded-3xl border border-gray-soft bg-white px-8 py-8 sm:px-10">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="space-y-1">
-            <p className="text-xs uppercase tracking-[0.24em] text-gray-deep/70">
-              Early access
-            </p>
-            <p className="text-sm text-gray-deep/80">
-              Be the first to know about new surplus drops and private sales.
-            </p>
-          </div>
-          <form
-            className="flex w-full max-w-md gap-3"
-            action="/api/newsletter"
-            method="post"
-          >
-            <input
-              type="email"
-              name="email"
-              required
-              placeholder="you@example.com"
-              className="h-10 flex-1 rounded-full border border-gray-soft bg-white px-4 text-sm outline-none ring-0 focus:border-ink"
-            />
-            <button
-              type="submit"
-              className="h-10 rounded-full bg-ink px-5 text-xs font-medium uppercase tracking-[0.16em] text-white transition hover:bg-ink/90"
-            >
-              Get access
-            </button>
-          </form>
-        </div>
+        <NewsletterSignup
+          status={params.newsletter}
+          errorMessage={params.msg}
+        />
       </section>
     </main>
   );

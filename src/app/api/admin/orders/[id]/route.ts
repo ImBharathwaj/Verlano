@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAdmin } from "@/lib/admin-auth";
+import { logAudit } from "@/lib/audit-log";
 
 export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ id: string }> };
 
 export async function GET(request: Request, { params }: Params) {
+  const guard = requireAdmin(request);
+  if (guard) return guard;
+
   const { id } = await params;
 
   try {
@@ -57,10 +61,21 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   try {
+    const existing = await prisma.order.findUnique({ where: { id }, select: { orderStatus: true } });
     const updated = await prisma.order.update({
       where: { id },
       data: { orderStatus },
     });
+    if (existing && existing.orderStatus !== orderStatus) {
+      await logAudit({
+        entityType: "order",
+        entityId: id,
+        action: "update",
+        field: "orderStatus",
+        oldValue: existing.orderStatus,
+        newValue: orderStatus,
+      });
+    }
     return NextResponse.json(updated);
   } catch (error) {
     console.error("[PATCH /api/admin/orders/[id]]", error);

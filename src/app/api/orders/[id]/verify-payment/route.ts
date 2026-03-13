@@ -3,6 +3,9 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { verifyPaymentSignature } from "@/lib/razorpay-verify";
 import { CART_COOKIE_NAME } from "@/lib/cart";
+import { sendOrderConfirmationEmail } from "@/lib/order-email";
+import { releaseCartReservations } from "@/lib/inventory-reservation";
+import { incrementCouponUsage } from "@/lib/coupon";
 
 export const dynamic = "force-dynamic";
 
@@ -80,15 +83,25 @@ export async function POST(request: Request, { params }: Params) {
       for (const item of order.items) {
         await tx.inventory.updateMany({
           where: { variantId: item.variantId },
-          data: {
-            stockQuantity: { decrement: item.quantity },
-          },
+          data: { stockQuantity: { decrement: item.quantity } },
         });
       }
     });
 
+    if (order.cartId) {
+      await releaseCartReservations(order.cartId);
+    }
+
+    if (order.couponCode) {
+      await incrementCouponUsage(order.couponCode);
+    }
+
     const cookieStore = await cookies();
     cookieStore.delete(CART_COOKIE_NAME);
+
+    sendOrderConfirmationEmail(order.id).catch((err) =>
+      console.error("[verify-payment] order email", err)
+    );
 
     return NextResponse.json({ success: true, orderId: order.id });
   } catch (error) {
