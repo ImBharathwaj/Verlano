@@ -9,7 +9,7 @@ export function CartTrigger() {
     <button
       type="button"
       onClick={openCart}
-      className="text-sm font-medium hover:opacity-80"
+      className="cursor-pointer text-sm font-medium hover:opacity-80"
     >
       Cart {cartCount > 0 ? `(${cartCount})` : ""}
     </button>

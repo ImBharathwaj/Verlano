@@ -39,16 +39,35 @@ h4 {
   letter-spacing: -0.03em;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+a,
+button {
+  transition:
+    color 150ms ease-out,
+    background-color 150ms ease-out,
+    border-color 150ms ease-out,
+    box-shadow 150ms ease-out,
+    transform 150ms ease-out;
+}
+
+button:active,
+a:active {
+  transform: translateY(1px);
+}
+
 @keyframes marquee {
   0% {
     transform: translateX(0);
   }
   100% {
-    transform: translateX(-50%);
+    transform: translateX(-100%);
   }
 }
 
 .animate-marquee {
-  animation: marquee 40s linear infinite;
+  animation: marquee 120s linear infinite;
 }
 

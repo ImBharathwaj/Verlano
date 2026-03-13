@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useCart } from "@/contexts/CartContext";
 
 type VariantOption = {
   id: string;
   size: string;
+  color: string | null;
   stock: number;
 };
 
@@ -13,9 +14,47 @@ type AddToCartProps = {
   variants: VariantOption[];
 };
 
+const SIZE_ORDER = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "2XL", "3XL"];
+
+function sortSizes(sizes: string[]): string[] {
+  return [...sizes].sort((a, b) => {
+    const ai = SIZE_ORDER.indexOf(a.toUpperCase());
+    const bi = SIZE_ORDER.indexOf(b.toUpperCase());
+    if (ai !== -1 && bi !== -1) return ai - bi;
+    if (ai !== -1) return -1;
+    if (bi !== -1) return 1;
+    const an = parseInt(a, 10);
+    const bn = parseInt(b, 10);
+    if (!Number.isNaN(an) && !Number.isNaN(bn)) return an - bn;
+    return a.localeCompare(b);
+  });
+}
+
+const NO_COLOR_LABEL = "—";
+
 export function AddToCart({ variants }: AddToCartProps) {
-  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(
-    variants[0]?.id ?? null,
+  const uniqueSizes = useMemo(
+    () => sortSizes([...new Set(variants.map((v) => v.size.trim()).filter(Boolean))]),
+    [variants],
+  );
+  const colorOptions = useMemo(() => {
+    const set = new Set<string>();
+    variants.forEach((v) => {
+      const c = v.color?.trim() ?? "";
+      set.add(c || NO_COLOR_LABEL);
+    });
+    const list = [...set];
+    if (list.includes(NO_COLOR_LABEL)) {
+      return [NO_COLOR_LABEL, ...list.filter((c) => c !== NO_COLOR_LABEL).sort()];
+    }
+    return list.sort();
+  }, [variants]);
+
+  const hasColorRow = colorOptions.length > 0;
+
+  const [selectedSize, setSelectedSize] = useState<string>(uniqueSizes[0] ?? "");
+  const [selectedColor, setSelectedColor] = useState<string>(
+    colorOptions[0] ?? NO_COLOR_LABEL,
   );
   const [quantity, setQuantity] = useState(1);
   const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">(
@@ -23,20 +62,43 @@ export function AddToCart({ variants }: AddToCartProps) {
   );
   const { openCart, refreshCart } = useCart();
 
-  const selectedVariant = variants.find((v) => v.id === selectedVariantId);
+  const selectedVariant = useMemo(
+    () =>
+      variants.find(
+        (v) =>
+          v.size === selectedSize &&
+          (v.color?.trim() ?? "") === (selectedColor === NO_COLOR_LABEL ? "" : selectedColor),
+      ) ?? null,
+    [variants, selectedSize, selectedColor],
+  );
+
+  useEffect(() => {
+    if (selectedVariant) return;
+    const firstWithStock = colorOptions.find((color) => {
+      const colorValue = color === NO_COLOR_LABEL ? "" : color;
+      const v = variants.find(
+        (x) =>
+          x.size === selectedSize &&
+          (x.color?.trim() ?? "") === colorValue &&
+          x.stock > 0,
+      );
+      return !!v;
+    });
+    if (firstWithStock !== undefined) setSelectedColor(firstWithStock);
+  }, [selectedSize, colorOptions, variants]);
   const canAdd =
     selectedVariant &&
     selectedVariant.stock >= quantity &&
     quantity >= 1;
 
   const handleAdd = async () => {
-    if (!selectedVariantId || !canAdd) return;
+    if (!selectedVariant?.id || !canAdd) return;
     setStatus("loading");
     try {
       const res = await fetch("/api/cart", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ variantId: selectedVariantId, quantity }),
+        body: JSON.stringify({ variantId: selectedVariant.id, quantity }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -50,6 +112,9 @@ export function AddToCart({ variants }: AddToCartProps) {
       setStatus("error");
     }
   };
+
+  const stockForSize = (size: string) =>
+    variants.filter((v) => v.size === size).reduce((s, v) => s + v.stock, 0);
 
   if (variants.length === 0) {
     return (
@@ -70,23 +135,61 @@ export function AddToCart({ variants }: AddToCartProps) {
           Size
         </p>
         <div className="flex flex-wrap gap-2">
-          {variants.map((v) => (
-            <button
-              key={v.id}
-              type="button"
-              onClick={() => setSelectedVariantId(v.id)}
-              disabled={v.stock === 0}
-              className={`min-w-[40px] rounded-full border px-3 py-1 text-xs font-medium ${
-                selectedVariantId === v.id
-                  ? "border-black bg-black text-white"
-                  : "border-gray-soft text-black hover:border-black/60"
-              } ${v.stock === 0 ? "cursor-not-allowed opacity-50" : ""}`}
-            >
-              {v.size}
-            </button>
-          ))}
+          {uniqueSizes.map((size) => {
+            const outOfStock = stockForSize(size) === 0;
+            const isSelected = selectedSize === size;
+            return (
+              <button
+                key={size}
+                type="button"
+                onClick={() => setSelectedSize(size)}
+                disabled={outOfStock}
+                className={`min-w-[40px] rounded-full border px-3 py-1 text-xs font-medium ${
+                  isSelected
+                    ? "border-black bg-black text-white"
+                    : "border-gray-soft text-black hover:border-black/60"
+                } ${outOfStock ? "cursor-not-allowed opacity-50" : ""}`}
+              >
+                {size}
+              </button>
+            );
+          })}
         </div>
       </div>
+      {hasColorRow && (
+        <div className="space-y-2">
+          <p className="text-xs font-medium uppercase tracking-[0.2em] text-gray-deep/70">
+            Colour
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {colorOptions.map((color) => {
+              const colorValue = color === NO_COLOR_LABEL ? "" : color;
+              const variantForSizeColor = variants.find(
+                (v) =>
+                  v.size === selectedSize &&
+                  (v.color?.trim() ?? "") === colorValue,
+              );
+              const outOfStock = !variantForSizeColor || variantForSizeColor.stock === 0;
+              const isSelected = selectedColor === color;
+              return (
+                <button
+                  key={color}
+                  type="button"
+                  onClick={() => setSelectedColor(color)}
+                  disabled={outOfStock}
+                  className={`min-w-[40px] rounded-full border px-3 py-1 text-xs font-medium ${
+                    isSelected
+                      ? "border-black bg-black text-white"
+                      : "border-gray-soft text-black hover:border-black/60"
+                  } ${outOfStock ? "cursor-not-allowed opacity-50" : ""}`}
+                >
+                  {color === NO_COLOR_LABEL ? "One colour" : color}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-1">
           <button

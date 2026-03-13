@@ -1,8 +1,9 @@
-import type { Product, ProductVariant, Inventory } from "@prisma/client";
+import type { Product, ProductVariant, Inventory, ProductImage } from "@prisma/client";
 import { ProductCard } from "./ProductCard";
 
 type ProductWithRelations = Product & {
   variants: (ProductVariant & { inventory: Inventory | null })[];
+  images: ProductImage[];
 };
 
 type ProductGridProps = {

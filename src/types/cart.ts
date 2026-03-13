@@ -4,6 +4,7 @@ export type CartItemDto = {
   quantity: number;
   price: number;
   size: string;
+  color: string | null;
   productTitle: string;
   productSlug: string;
   productBrand: string;

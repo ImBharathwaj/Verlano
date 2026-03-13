@@ -28,7 +28,11 @@ export function CartItem({
         >
           {item.productTitle}
         </Link>
-        <p className="mt-1 text-xs text-gray-deep/80">Size: {item.size}</p>
+        <p className="mt-1 text-xs text-gray-deep/80">
+          {item.color?.trim()
+            ? `Size: ${item.size} · Colour: ${item.color.trim()}`
+            : `Size: ${item.size}`}
+        </p>
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <div className="flex items-center gap-1">
