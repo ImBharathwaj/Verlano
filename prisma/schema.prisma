@@ -26,6 +26,7 @@ model Product {
   slug         String          @unique
   description  String
   brand        String
+  categories   String[]        @default([]) // e.g. ["women", "shirt"] — used for shop filter
   price        Int
   comparePrice Int?
   createdAt    DateTime        @default(now())

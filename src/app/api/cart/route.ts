@@ -40,6 +40,7 @@ export async function GET() {
       quantity: item.quantity,
       price: item.variant.price,
       size: item.variant.size,
+      color: item.variant.color ?? null,
       productTitle: item.variant.product.title,
       productSlug: item.variant.product.slug,
       productBrand: item.variant.product.brand,

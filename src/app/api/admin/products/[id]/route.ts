@@ -48,17 +48,21 @@ export async function PATCH(request: Request, { params }: Params) {
     slug,
     description,
     brand,
+    categories,
     price,
     comparePrice,
     images,
+    variants,
   } = body as {
     title?: string;
     slug?: string;
     description?: string;
     brand?: string;
+    categories?: string[] | null;
     price?: number;
     comparePrice?: number | null;
     images?: { url: string; alt?: string | null; isPrimary?: boolean; position?: number }[];
+    variants?: { id?: string; size: string; color?: string | null; price: number; stockQuantity: number }[];
   };
 
   try {
@@ -70,6 +74,13 @@ export async function PATCH(request: Request, { params }: Params) {
           ...(slug ? { slug } : {}),
           ...(description ? { description } : {}),
           ...(brand ? { brand } : {}),
+          ...(categories !== undefined
+            ? {
+                categories: Array.isArray(categories)
+                  ? categories.filter((c) => typeof c === "string" && c.trim().length > 0).map((c) => c.trim().toLowerCase())
+                  : [],
+              }
+            : {}),
           ...(typeof price === "number" ? { price } : {}),
           ...(typeof comparePrice === "number"
             ? { comparePrice }
@@ -106,7 +117,60 @@ export async function PATCH(request: Request, { params }: Params) {
         }
       }
 
-      return product;
+      if (Array.isArray(variants) && variants.length > 0) {
+        const current = await tx.product.findUnique({
+          where: { id },
+          select: { slug: true },
+        });
+        const productSlug = current?.slug ?? id;
+        let newVariantIndex = 0;
+        for (const v of variants) {
+          if (v.id) {
+            const existing = await tx.productVariant.findFirst({
+              where: { id: v.id, productId: id },
+              include: { inventory: true },
+            });
+            if (existing) {
+              await tx.productVariant.update({
+                where: { id: v.id },
+                data: { size: v.size, color: (v.color && String(v.color).trim()) || null, price: v.price },
+              });
+              if (existing.inventory) {
+                await tx.inventory.update({
+                  where: { variantId: v.id },
+                  data: { stockQuantity: v.stockQuantity },
+                });
+              } else {
+                await tx.inventory.create({
+                  data: { variantId: v.id, stockQuantity: v.stockQuantity },
+                });
+              }
+            }
+          } else if (v.size && String(v.size).trim()) {
+            const colorPart = (v.color && String(v.color).trim()) || "std";
+            const sku = `${productSlug}-${v.size}-${colorPart.replace(/\s+/g, "-")}-${Date.now()}-${++newVariantIndex}`;
+            const newVariant = await tx.productVariant.create({
+              data: {
+                productId: id,
+                size: v.size.trim(),
+                color: (v.color && String(v.color).trim()) || null,
+                price: v.price,
+                sku,
+              },
+            });
+            await tx.inventory.create({
+              data: { variantId: newVariant.id, stockQuantity: v.stockQuantity },
+            });
+          }
+        }
+      }
+
+      const result = await tx.product.findUnique({
+        where: { id },
+        include: { variants: { include: { inventory: true } }, images: true },
+      });
+      if (!result) throw new Error("Product not found");
+      return result;
     });
     return NextResponse.json(updated);
   } catch (error) {

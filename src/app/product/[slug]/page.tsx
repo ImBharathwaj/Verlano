@@ -31,6 +31,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const variantOptions = product.variants.map((v) => ({
     id: v.id,
     size: v.size,
+    color: v.color ?? null,
     stock: v.inventory?.stockQuantity ?? 0,
   }));
 

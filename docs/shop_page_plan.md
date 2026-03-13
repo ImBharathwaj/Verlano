@@ -4,7 +4,7 @@ This plan defines the structure and sections for a **rich, premium** shop page.
 
 ---
 
-### 1. Shop hero strip
+### 1. Shop hero strip ✅
 
 - **Goal**: Introduce the catalog and current focus.
 - **Content**:
@@ -16,7 +16,7 @@ This plan defines the structure and sections for a **rich, premium** shop page.
 
 ---
 
-### 2. Filters & sorting bar
+### 2. Filters & sorting bar ✅
 
 - **Goal**: Give users quick control over the catalog.
 - **Layout**:
@@ -31,7 +31,7 @@ This plan defines the structure and sections for a **rich, premium** shop page.
 
 ---
 
-### 3. Left filter column (desktop-only)
+### 3. Left filter column (desktop-only) ✅
 
 - **Goal**: More serious browsing tools for desktop users.
 - **Layout**:
@@ -47,7 +47,7 @@ This plan defines the structure and sections for a **rich, premium** shop page.
 
 ---
 
-### 4. Product grid enhancements
+### 4. Product grid enhancements ✅
 
 - **Goal**: Make the grid feel richer and more scannable.
 - **Changes**:
@@ -59,7 +59,7 @@ This plan defines the structure and sections for a **rich, premium** shop page.
 
 ---
 
-### 5. Category highlight rows
+### 5. Category highlight rows ✅
 
 - **Goal**: Break the grid with focused, horizontal sections.
 - **Sections**:
@@ -70,20 +70,23 @@ This plan defines the structure and sections for a **rich, premium** shop page.
 
 ---
 
-### 6. Empty state & load feedback
+### 6. Empty state & load feedback ✅
 
 - **Goal**: Handle edge cases gracefully.
 - **States**:
   - When no products match: show a bordered card with messaging and a “Clear filters” button (later once filters wired).
   - While loading (if we add client-side filtering): simple skeleton cards or “Loading products…” text.
+- **Implemented**:
+  - Empty state: when no products match (e.g. category filter), a bordered card shows “No products match your selection” with a “Clear filters / View all” link to `/shop`.
+  - Loading: `loading.tsx` for `/shop` shows skeleton placeholders (hero + product grid) while the page loads (Next.js App Router).
 
 ---
 
 ### 7. Implementation order
 
-1. **Enhance existing `/shop` hero and grid** (Sections 1 & 4).
-2. **Add top filters & sort bar** (Section 2, UI first).
-3. **Introduce left filter column on desktop** (Section 3, UI shell).
-4. **Add category highlight rows above grid** (Section 5).
-5. **Refine empty state and future loading feedback** (Section 6).
+1. **Enhance existing `/shop` hero and grid** (Sections 1 & 4). ✅
+2. **Add top filters & sort bar** (Section 2, UI first). ✅
+3. **Introduce left filter column on desktop** (Section 3, UI shell — later simplified/removed per product decisions). ✅
+4. **Add category highlight rows above grid** (Section 5). ✅
+5. **Refine empty state and loading feedback** (Section 6). ✅
 
