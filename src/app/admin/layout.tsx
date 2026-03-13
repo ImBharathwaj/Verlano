@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { AdminSignOut } from "@/components/admin/AdminSignOut";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
@@ -18,6 +19,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
           <Link href="/admin/orders" className="block text-gray-deep/80 hover:text-black">
             Orders
           </Link>
+          <AdminSignOut />
         </nav>
       </aside>
       <section className="flex-1">{children}</section>

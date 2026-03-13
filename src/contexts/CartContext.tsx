@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useState,
   type ReactNode,
 } from "react";
@@ -34,7 +35,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const refreshCart = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/cart");
+      const res = await fetch("/api/cart", { credentials: "include" });
       const data = await res.json();
       setCart(data);
     } catch {
@@ -43,6 +44,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    void refreshCart();
+  }, [refreshCart]);
 
   const updateQuantity = useCallback(
     async (cartItemId: string, quantity: number) => {

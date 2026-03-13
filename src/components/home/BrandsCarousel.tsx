@@ -46,6 +46,7 @@ export function BrandsCarousel() {
                 alt={brand.alt}
                 width={112}
                 height={48}
+                sizes="112px"
                 className="object-contain"
               />
             </div>

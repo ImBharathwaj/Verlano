@@ -33,13 +33,22 @@ export function CheckoutClient() {
   const [errorMessage, setErrorMessage] = useState("");
 
   const [form, setForm] = useState({
+    shippingEmail: "",
     shippingName: "",
     shippingPhone: "",
     shippingStreet: "",
     shippingCity: "",
     shippingState: "",
     shippingPostalCode: "",
+    subscribeToNewsletter: false,
+    couponCode: "",
+    paymentMethod: "razorpay" as "razorpay" | "cod",
   });
+  const [couponState, setCouponState] = useState<{
+    applied: boolean;
+    discountAmount?: number;
+    error?: string;
+  }>({ applied: false });
 
   const fetchCart = useCallback(async () => {
     const res = await fetch("/api/cart");
@@ -51,6 +60,26 @@ export function CheckoutClient() {
     fetchCart().finally(() => setLoading(false));
   }, [fetchCart]);
 
+  const handleApplyCoupon = async () => {
+    if (!form.couponCode.trim()) return;
+    setCouponState({ applied: false });
+    try {
+      const res = await fetch("/api/coupon/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: form.couponCode, subtotal: total }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        setCouponState({ applied: true, discountAmount: data.discountAmount });
+      } else {
+        setCouponState({ applied: false, error: data.error ?? "Invalid coupon" });
+      }
+    } catch {
+      setCouponState({ applied: false, error: "Failed to validate coupon" });
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
@@ -59,7 +88,12 @@ export function CheckoutClient() {
     const res = await fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify({
+        ...form,
+        subscribeToNewsletter: form.subscribeToNewsletter,
+        couponCode: form.couponCode.trim() || undefined,
+        paymentMethod: form.paymentMethod,
+      }),
     });
 
     const data = await res.json();
@@ -67,6 +101,11 @@ export function CheckoutClient() {
     if (!res.ok) {
       setSubmitStatus("error");
       setErrorMessage(data.error ?? "Checkout failed");
+      return;
+    }
+
+    if (data.cod) {
+      router.push(`/checkout/success?orderId=${data.orderId}`);
       return;
     }
 
@@ -181,6 +220,19 @@ export function CheckoutClient() {
               />
             </div>
             <div>
+              <label htmlFor="shippingEmail" className="mb-1 block text-xs font-medium text-gray-deep/80">
+                Email (for order tracking)
+              </label>
+              <input
+                id="shippingEmail"
+                type="email"
+                value={form.shippingEmail}
+                onChange={(e) => setForm((f) => ({ ...f, shippingEmail: e.target.value }))}
+                className="w-full rounded-lg border border-gray-soft bg-white px-3 py-2 text-sm text-black"
+                placeholder="you@example.com"
+              />
+            </div>
+            <div>
               <label htmlFor="phone" className="mb-1 block text-xs font-medium text-gray-deep/80">
                 Phone
               </label>
@@ -245,6 +297,18 @@ export function CheckoutClient() {
                 className="w-full rounded-lg border border-gray-soft bg-white px-3 py-2 text-sm text-black"
               />
             </div>
+            <div className="sm:col-span-2 flex items-center gap-2">
+              <input
+                id="subscribeToNewsletter"
+                type="checkbox"
+                checked={form.subscribeToNewsletter}
+                onChange={(e) => setForm((f) => ({ ...f, subscribeToNewsletter: e.target.checked }))}
+                className="h-4 w-4 rounded border-gray-soft"
+              />
+              <label htmlFor="subscribeToNewsletter" className="text-xs text-gray-deep/80">
+                Subscribe to early access and new drops
+              </label>
+            </div>
           </div>
           {errorMessage && (
             <p className="text-sm text-red-600">{errorMessage}</p>
@@ -269,6 +333,72 @@ export function CheckoutClient() {
             <span>Subtotal</span>
             <span>₹{(total / 100).toFixed(0)}</span>
           </div>
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={form.couponCode}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, couponCode: e.target.value.toUpperCase() }));
+                  setCouponState({ applied: false });
+                }}
+                placeholder="Coupon code"
+                className="flex-1 rounded-lg border border-gray-soft bg-white px-3 py-2 text-sm"
+              />
+              <button
+                type="button"
+                onClick={handleApplyCoupon}
+                className="rounded-lg border border-gray-soft bg-gray-soft/40 px-3 py-2 text-xs font-medium hover:bg-gray-soft/60"
+              >
+                Apply
+              </button>
+            </div>
+            {couponState.error && (
+              <p className="text-xs text-red-600">{couponState.error}</p>
+            )}
+            {couponState.applied && couponState.discountAmount !== undefined && (
+              <p className="text-xs text-green-600">
+                Coupon applied! You save ₹{(couponState.discountAmount / 100).toFixed(0)}
+              </p>
+            )}
+          </div>
+          {couponState.applied && couponState.discountAmount !== undefined && (
+            <div className="flex justify-between text-sm text-gray-deep/80">
+              <span>Discount</span>
+              <span className="text-green-600">-₹{(couponState.discountAmount / 100).toFixed(0)}</span>
+            </div>
+          )}
+          <div className="flex justify-between border-t border-gray-soft pt-3 text-sm font-medium">
+            <span>Total</span>
+            <span>
+              ₹{((total - (couponState.applied ? couponState.discountAmount ?? 0 : 0)) / 100).toFixed(0)}
+            </span>
+          </div>
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-gray-deep/80">Payment method</p>
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-soft p-3">
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="razorpay"
+                checked={form.paymentMethod === "razorpay"}
+                onChange={() => setForm((f) => ({ ...f, paymentMethod: "razorpay" }))}
+                className="h-4 w-4"
+              />
+              <span className="text-sm">Pay with Card / UPI / Netbanking</span>
+            </label>
+            <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-soft p-3">
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="cod"
+                checked={form.paymentMethod === "cod"}
+                onChange={() => setForm((f) => ({ ...f, paymentMethod: "cod" }))}
+                className="h-4 w-4"
+              />
+              <span className="text-sm">Cash on Delivery (COD)</span>
+            </label>
+          </div>
           <p className="text-xs text-gray-deep/60">
             Shipping and taxes calculated at checkout.
           </p>
@@ -277,7 +407,11 @@ export function CheckoutClient() {
             disabled={submitStatus === "loading"}
             className="w-full rounded-full bg-black py-3 text-sm font-medium text-white hover:bg-black/90 disabled:opacity-50"
           >
-            {submitStatus === "loading" ? "Preparing…" : "Pay with Razorpay"}
+            {submitStatus === "loading"
+              ? "Preparing…"
+              : form.paymentMethod === "cod"
+                ? "Place order (Pay on delivery)"
+                : "Pay with Razorpay"}
           </button>
           <Link
             href="/cart"

@@ -8,16 +8,49 @@ datasource db {
 }
 
 model User {
+  id              String    @id @default(uuid())
+  name            String
+  email           String    @unique
+  phone           String?
+  password        String?   // null for OAuth-only users
+  emailVerifiedAt DateTime?
+  createdAt       DateTime  @default(now())
+
+  cart                   Cart?
+  orders                 Order[]
+  addresses              Address[]
+  wishlistItems          WishlistItem[]
+  passwordResetTokens    PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+}
+
+model EmailVerificationToken {
   id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  phone     String?
-  password  String
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+model WishlistItem {
+  id        String   @id @default(uuid())
+  userId   String
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 
-  cart      Cart?
-  orders    Order[]
-  addresses Address[]
+  @@unique([userId, productId])
 }
 
 model Product {
@@ -31,8 +64,9 @@ model Product {
   comparePrice Int?
   createdAt    DateTime        @default(now())
 
-  variants     ProductVariant[]
-  images       ProductImage[]
+  variants       ProductVariant[]
+  images         ProductImage[]
+  wishlistItems  WishlistItem[]
 }
 
 model ProductVariant {
@@ -62,8 +96,19 @@ model Cart {
   user      User?      @relation(fields: [userId], references: [id])
   userId    String?    @unique
   createdAt DateTime   @default(now())
+  updatedAt DateTime   @default(now()) @updatedAt
 
   items     CartItem[]
+}
+
+model InventoryReservation {
+  id        String   @id @default(uuid())
+  cartId    String
+  variantId String
+  quantity  Int
+  expiresAt DateTime
+
+  @@unique([cartId, variantId])
 }
 
 model CartItem {
@@ -75,15 +120,31 @@ model CartItem {
   quantity  Int
 }
 
+model Coupon {
+  id             String    @id @default(uuid())
+  code           String    @unique
+  type           String    // percent | fixed
+  value          Int       // percent: 1-100, fixed: amount in paise
+  minOrderAmount Int?      // minimum order in paise
+  maxUses        Int?      // null = unlimited
+  usedCount      Int       @default(0)
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+}
+
 model Order {
   id            String      @id @default(uuid())
   user          User?       @relation(fields: [userId], references: [id])
   userId        String?
+  cartId        String?     // for releasing inventory reservations on payment success
   totalAmount   Int
-  paymentStatus String      // pending | paid | failed | refunded
+  couponCode    String?     // applied coupon code
+  discountAmount Int       @default(0) // discount in paise
+  paymentStatus String      // pending | paid | failed | refunded | cod
   orderStatus   String      // pending | processing | shipped | delivered
 
   // Guest shipping address (stored on order for guest checkout)
+  shippingEmail    String?   // for order lookup / tracking
   shippingName     String?
   shippingPhone    String?
   shippingStreet   String?
@@ -137,6 +198,13 @@ model Payment {
   amount          Int
 }
 
+model NewsletterSubscriber {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  source    String   @default("homepage") // homepage | checkout
+  createdAt DateTime @default(now())
+}
+
 model ProductImage {
   id        String  @id @default(uuid())
   product   Product @relation(fields: [productId], references: [id])
@@ -145,4 +213,15 @@ model ProductImage {
   alt       String?
   position  Int     @default(0)
   isPrimary Boolean @default(false)
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  entityType String   // order | product
+  entityId   String
+  action     String   // create | update | delete
+  field      String?  // e.g. orderStatus, price
+  oldValue   String?  // JSON or string
+  newValue   String?  // JSON or string
+  createdAt  DateTime @default(now())
 }

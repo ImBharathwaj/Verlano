@@ -9,22 +9,19 @@ function hasAdminCookie(request: Request) {
 }
 
 export function requireAdmin(request: Request) {
-  // Allow when admin session cookie is present.
+  // Allow when admin session cookie is present (browser login).
   if (hasAdminCookie(request)) {
     return null;
   }
 
-  // Fallback to header-based secret (useful for CLI tools or when no cookie yet).
-  if (!ADMIN_SECRET) {
-    // If no secret is configured, allow all (useful in local dev).
-    return null;
+  // Allow when env-based secret is set and request sends it (CLI / server-to-server).
+  if (ADMIN_SECRET) {
+    const header = request.headers.get("x-admin-secret");
+    if (header === ADMIN_SECRET) {
+      return null;
+    }
   }
 
-  const header = request.headers.get("x-admin-secret");
-  if (!header || header !== ADMIN_SECRET) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  return null;
+  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 }
 

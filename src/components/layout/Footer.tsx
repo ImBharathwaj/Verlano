@@ -32,6 +32,12 @@ export function Footer() {
               <a href="/contact" className="text-[11px] text-gray-soft/80 hover:text-white">
                 Contact
               </a>
+              <a href="/track-order" className="text-[11px] text-gray-soft/80 hover:text-white">
+                Track order
+              </a>
+              <a href="/saved" className="text-[11px] text-gray-soft/80 hover:text-white">
+                Saved
+              </a>
             </nav>
           </div>
           <div className="space-y-2">

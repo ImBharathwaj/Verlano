@@ -3,6 +3,21 @@ const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
 async function main() {
+  // Seed a test coupon if none exist
+  const couponCount = await prisma.coupon.count();
+  if (couponCount === 0) {
+    await prisma.coupon.create({
+      data: {
+        code: "WELCOME10",
+        type: "percent",
+        value: 10,
+        minOrderAmount: 100000, // ₹1000
+        maxUses: 100,
+      },
+    });
+    console.log("Created test coupon: WELCOME10 (10% off, min ₹1000)");
+  }
+
   const placeholderUrl =
     process.env.DEFAULT_PRODUCT_IMAGE_URL ||
     "https://placehold.co/800x1000/FFFFFF/000000?text=Verlano";

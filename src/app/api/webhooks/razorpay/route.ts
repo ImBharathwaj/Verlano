@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
+import { sendOrderConfirmationEmail } from "@/lib/order-email";
+import { releaseCartReservations } from "@/lib/inventory-reservation";
 
 export const dynamic = "force-dynamic";
 
@@ -72,6 +74,12 @@ export async function POST(request: Request) {
           });
         }
       });
+      if (order.cartId) {
+        await releaseCartReservations(order.cartId);
+      }
+      sendOrderConfirmationEmail(order.id).catch((err) =>
+        console.error("[webhook razorpay] order email", err)
+      );
     } catch (error) {
       console.error("[webhook razorpay payment.captured]", error);
       return NextResponse.json(

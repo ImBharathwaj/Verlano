@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { CATEGORY_OPTIONS } from "@/lib/categories";
+import { CATEGORY_OPTIONS, categoryLabel } from "@/lib/categories";
 
 type ProductImage = {
   id: string;
@@ -251,7 +251,7 @@ export default function AdminEditProductPage() {
                       onChange={() => toggleCategory(cat)}
                       className="rounded border-gray-deep/40 text-ink"
                     />
-                    <span className="capitalize">{cat}</span>
+                    <span>{categoryLabel(cat)}</span>
                   </label>
                 );
               })}

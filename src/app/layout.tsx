@@ -5,6 +5,8 @@ import { Header } from "../components/layout/Header";
 import { Footer } from "../components/layout/Footer";
 import { Container } from "../components/layout/Container";
 import { CartProvider } from "@/contexts/CartContext";
+import { SessionProvider } from "@/components/providers/SessionProvider";
+import { Analytics } from "@/components/Analytics";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
@@ -16,9 +18,27 @@ const inter = Inter({
   variable: "--font-body",
 });
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://verlano.com";
+
 export const metadata: Metadata = {
-  title: "Verlano — Luxury within reach",
+  metadataBase: new URL(siteUrl),
+  title: {
+    default: "Verlano — Luxury within reach",
+    template: "%s | Verlano",
+  },
   description: "Premium surplus fashion at insider prices.",
+  openGraph: {
+    type: "website",
+    locale: "en_IN",
+    siteName: "Verlano",
+    title: "Verlano — Luxury within reach",
+    description: "Premium surplus fashion at insider prices.",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Verlano — Luxury within reach",
+    description: "Premium surplus fashion at insider prices.",
+  },
 };
 
 export default function RootLayout({
@@ -31,11 +51,13 @@ export default function RootLayout({
       <body
         className={`${playfair.variable} ${inter.variable} bg-background text-foreground antialiased`}
       >
-        <CartProvider>
-          <Header />
-          <Container>{children}</Container>
-          <Footer />
-        </CartProvider>
+        <SessionProvider>
+          <CartProvider>
+            <Header />
+            <Container>{children}</Container>
+            <Footer />
+          </CartProvider>
+        </SessionProvider>
       </body>
     </html>
   );

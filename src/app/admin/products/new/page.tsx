@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { CATEGORY_OPTIONS } from "@/lib/categories";
+import { CATEGORY_OPTIONS, categoryLabel } from "@/lib/categories";
 
 type VariantRow = { sizes: string; colors: string; price: string; stockQuantity: string };
 
@@ -191,7 +191,7 @@ export default function AdminNewProductPage() {
                       }}
                       className="rounded border-gray-deep/40 text-ink"
                     />
-                    <span className="capitalize">{cat}</span>
+                    <span>{categoryLabel(cat)}</span>
                   </label>
                 );
               })}
